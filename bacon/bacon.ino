@@ -1,80 +1,72 @@
-/*
-  DigitalReadSerial
-
-  Reads a digital input on pin 2, prints the result to the Serial Monitor
-
-  This example code is in the public domain.
-
-  https://docs.arduino.cc/built-in-examples/basics/DigitalReadSerial/
-*/
-
-// digital pin 2 has a pushbutton attached to it. Give it a name:
-const int buttonPin = 2;   // 按鈕接腳
+// LED 腳位
 const int RledPin = 3;
-const int GledPin = 4;
-const int BledPin = 5; 
+const int GledPin = 5;
+const int BledPin = 4;
+const int buttonPin = 2;
 
-int ledcolor = 0;
-int buttonState = 0;
+int ledcolor = 0;           // 顏色計數器
+bool ledOn = true;          // LED 開關
+bool buttonPressed = false;
 
-// the setup routine runs once when you press reset:
+unsigned long lastPressTime = 0;
+const unsigned long doubleClickDelay = 400;  // 雙擊判定間隔 (ms)
+
+String colors[] = {"Red","Green","Blue","Yellow","Purple","Cyan","White"};
+int states[][3] = {
+  {0,1,1}, // Red
+  {1,0,1}, // Green
+  {1,1,0}, // Blue
+  {0,0,1}, // Yellow
+  {0,1,0}, // Purple
+  {1,0,0}, // Cyan
+  {0,0,0}  // White
+};
+
 void setup() {
   pinMode(RledPin, OUTPUT);
   pinMode(GledPin, OUTPUT);
   pinMode(BledPin, OUTPUT);
   pinMode(buttonPin, INPUT);
+
+  Serial.begin(9600);
 }
 
-// the loop routine runs over and over again forever:
 void loop() {
-  buttonState = digitalRead(buttonPin);
+  int buttonState = digitalRead(buttonPin);
 
-  if (buttonState == HIGH) { 
-    ledcolor = ledcolor + 1; 
-    delay(100); 
+  if (buttonState == HIGH && !buttonPressed) {
+    unsigned long currentTime = millis();
 
-    if (ledcolor == 0) { 
-      digitalWrite(RledPin, HIGH);
-      digitalWrite(GledPin, HIGH);
-      digitalWrite(BledPin, HIGH);
+    if (currentTime - lastPressTime < doubleClickDelay) {
+      // 雙擊 → 開/關 LED
+      ledOn = !ledOn;
+      Serial.println("LED toggled!");
+      delay(50);  // 去抖
+    } else {
+      // 單擊 → 切換顏色
+      ledcolor = (ledcolor + 1) % 7;
+      Serial.print("Color switched to: ");
+      Serial.println(colors[ledcolor]);
+      delay(50);  // 去抖
     }
-    else if (ledcolor == 1) { 
-      digitalWrite(RledPin, LOW);
-      digitalWrite(GledPin, HIGH);
-      digitalWrite(BledPin, HIGH);
-    }
-    else if (ledcolor == 2) { 
-      digitalWrite(RledPin, HIGH);
-      digitalWrite(GledPin, LOW);
-      digitalWrite(BledPin, HIGH);
-    }
-    else if (ledcolor == 3) { 
-      digitalWrite(RledPin, HIGH);
-      digitalWrite(GledPin, HIGH);
-      digitalWrite(BledPin, LOW);
-    }
-    else if (ledcolor == 4) { 
-      digitalWrite(RledPin, LOW);
-      digitalWrite(GledPin, LOW);
-      digitalWrite(BledPin, HIGH);
-    }
-    else if (ledcolor == 5) { 
-      digitalWrite(RledPin, LOW);
-      digitalWrite(GledPin, HIGH);
-      digitalWrite(BledPin, LOW);
-    }
-    else if (ledcolor == 6) { 
-      digitalWrite(RledPin, HIGH);
-      digitalWrite(GledPin, LOW);
-      digitalWrite(BledPin, LOW);
-    }
-    else if (ledcolor == 7) { 
-      digitalWrite(RledPin, LOW);
-      digitalWrite(GledPin, LOW);
-      digitalWrite(BledPin, LOW);
-    }
-    else if (ledcolor == 8) { 
-      ledcolor = 0;
-    }
-  } // 這是 if(buttonState == HIGH) 的結尾
-}   // 這是 void loop() 的結尾
+
+    lastPressTime = currentTime;
+    buttonPressed = true;
+  }
+
+  if (buttonState == LOW && buttonPressed) {
+    buttonPressed = false;
+  }
+
+  // 根據 ledOn 與顏色設定 LED
+  if (ledOn) {
+    digitalWrite(RledPin, states[ledcolor][0]);
+    digitalWrite(GledPin, states[ledcolor][1]);
+    digitalWrite(BledPin, states[ledcolor][2]);
+  } else {
+    // LED 關閉
+    digitalWrite(RledPin, HIGH);
+    digitalWrite(GledPin, HIGH);
+    digitalWrite(BledPin, HIGH);
+  }
+}
