@@ -84,7 +84,7 @@ void ghostFlicker(){
 void sosBlink(){
   if(millis() - sosTimer >= sosDurations[sosStep]){
     if(sosOn[sosStep]) setColor(0,0,255); // 紅光亮
-    else setColor(255,0,255);             // 完全暗
+    else setColor(0,0,0);             // 完全暗
     sosStep++;
     if(sosStep >= 9) sosStep = 0;
     sosTimer = millis();
